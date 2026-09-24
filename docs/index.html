@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="uk">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Вільні номери 00xx · Київ</title>
+<style>
+  :root { color-scheme: light dark; --bg: #fff; --fg: #111; --muted: #666; --line: #e5e5e5; }
+  @media (prefers-color-scheme: dark) { :root { --bg: #111; --fg: #eee; --muted: #999; --line: #333; } }
+  body { margin: 0 auto; max-width: 40rem; padding: 2rem 1rem; font: 16px/1.5 system-ui, sans-serif;
+         background: var(--bg); color: var(--fg); }
+  h1 { font-size: 1.4rem; margin: 0; }
+  p { color: var(--muted); margin: .25rem 0 1.5rem; }
+  table { width: 100%; border-collapse: collapse; }
+  th, td { padding: .5rem 0; border-bottom: 1px solid var(--line); text-align: left; }
+  th { font-weight: 500; font-size: .85rem; color: var(--muted); }
+  th:nth-child(2), td:nth-child(2) { text-align: right; padding-right: 1.5rem; }
+  .plate { display: inline-block; padding: 0 .5rem; font: 600 1.05rem ui-monospace, monospace;
+           letter-spacing: .05em; color: #111; background: #fff; border: 2px solid #111;
+           border-left: 10px solid #0057b7; border-radius: 4px; }
+  .stale { color: #c2410c; }
+</style>
+<h1>Вільні номери 0000–0099 · м. Київ</h1>
+<p id="meta">Завантаження…</p>
+<table>
+  <thead><tr><th>Номер</th><th>Ціна</th><th>ТСЦ</th></tr></thead>
+  <tbody id="rows"></tbody>
+</table>
+<p><a href="https://opendata.hsc.gov.ua/check-leisure-license-plates/">Перевірити на сайті ГСЦ МВС</a></p>
+<script>
+  const meta = document.getElementById("meta"), rows = document.getElementById("rows");
+  fetch("plates.json", { cache: "no-cache" }).then(r => r.json()).then(d => {
+    const checked = new Date(d.checked);
+    meta.textContent = `${d.plates.length} з ${d.region_total} у регіоні · перевірено ${checked.toLocaleString("uk-UA")}`;
+    if (Date.now() - checked > 2 * 36e5)   // the updater runs every 30 min; 2 h means it's failing
+      meta.append(" · ", Object.assign(document.createElement("span"),
+                                       { className: "stale", textContent: "дані можуть бути застарілими" }));
+    // textContent, never innerHTML: these strings are scraped from another site
+    for (const [plate, price, tsc] of d.plates) {
+      const tr = rows.insertRow();
+      tr.insertCell().append(Object.assign(document.createElement("span"), { className: "plate", textContent: plate }));
+      tr.insertCell().textContent = (isNaN(price) ? price : Number(price).toLocaleString("uk-UA")) + " ₴";
+      tr.insertCell().textContent = tsc;
+    }
+  }).catch(() => meta.textContent = "Не вдалося завантажити список.");
+</script>

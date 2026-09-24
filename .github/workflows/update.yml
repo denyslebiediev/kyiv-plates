@@ -1,0 +1,35 @@
+name: update
+on:
+  schedule:
+    - cron: "7,37 * * * *"   # off the hour: GitHub's scheduler is most delayed at :00
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest     # not macos: Akamai 403s curl from GitHub's macOS runners
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v5
+      # A failed fetch keeps the last list (the page shows its age) and must not fail the job:
+      # the bulk query still 504s at times, and every failed scheduled run emails you.
+      - name: fetch
+        run: |
+          python3 - <<'EOF' || echo "::warning::fetch failed - the site keeps the previous list"
+          import json
+          from datetime import datetime, timezone
+          import plates
+          rows, hits, _ = plates.parse(plates.fetch())
+          with open("docs/plates.json", "w", encoding="utf-8") as f:
+              json.dump({"checked": datetime.now(timezone.utc).isoformat(timespec="seconds"),
+                         "region_total": len(rows), "plates": hits}, f, ensure_ascii=False, indent=1)
+          print(len(hits), "plates in 0000-0099 of", len(rows))
+          EOF
+      # ponytail: commits every successful run (the check time changes each time). That is the
+      # page's freshness stamp, and repo activity keeps GitHub from disabling the schedule at 60 days.
+      - name: commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add docs/plates.json
+          git diff --cached --quiet || { git commit -qm "plates $(date -u +%FT%TZ)" && git push -q; }
