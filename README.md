@@ -6,5 +6,5 @@ Available Kyiv license plates numbered 0000–0099, from the ГСЦ МВС check
 **Site:** <https://denyslebiediev.github.io/kyiv-plates/>
 
 `.github/workflows/update.yml` runs `plates.py` at :07 and :37 past every hour and commits
-`docs/plates.json`; GitHub Pages serves `docs/`. A failed fetch keeps the previous list, and the
+`docs/plates.json`, then deploys `docs/` to GitHub Pages. A failed fetch keeps the previous list, and the
 page flags data older than 2 hours.

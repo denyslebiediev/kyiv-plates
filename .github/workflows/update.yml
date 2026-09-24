@@ -5,10 +5,15 @@ on:
   workflow_dispatch:
 permissions:
   contents: write
+  pages: write        # deploy-pages: a push made with GITHUB_TOKEN doesn't trigger a Pages build
+  id-token: write
 jobs:
   update:
     runs-on: ubuntu-latest     # not macos: Akamai 403s curl from GitHub's macOS runners
     timeout-minutes: 5
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
     steps:
       - uses: actions/checkout@v5
       # A failed fetch keeps the last list (the page shows its age) and must not fail the job:
@@ -33,3 +38,8 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add docs/plates.json
           git diff --cached --quiet || { git commit -qm "plates $(date -u +%FT%TZ)" && git push -q; }
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: docs
+      - id: deploy
+        uses: actions/deploy-pages@v4
